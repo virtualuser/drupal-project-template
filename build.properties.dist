@@ -1,1 +1,7 @@
+project.name = "mydistro"
 project.environment.development = true
+
+drupal.db.name = "${project.name}"
+drupal.db.user = "${project.name}"
+drupal.db.password = "${project.name}"
+drupal.db.url = "mysql://${drupal.db.user}:${drupal.db.password}"@localhost/${drupal.db.name}
