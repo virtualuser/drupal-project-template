@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="mydistro" default="build" phingVersion="2.4.11">
+
+  <!-- Ensure build environment is set up -->
+  <target name="init">
+    <!-- Provide default build properties if none exist -->
+    <exec command="touch build.properties" dir="${project.basedir}" />
+    <filesize file="${project.basedir}/build.properties" propertyname="project.propfile.size" />
+    <if>
+      <equals arg1="0" arg2="${project.propfile.size}"/>
+      <then>
+        <copy file="build.properties.dist" tofile="build.properties" overwrite="true"/>
+      </then>
+    </if>
+  </target>
+
+  <target name="build" depends="init">
+    <property file="build.properties" override="true" />
+  </target>
+</project>
