@@ -1,0 +1,32 @@
+language: php
+
+php:
+  - 5.3
+
+mysql:
+  database: drupal
+  username: root
+  encoding: utf8
+
+before_script:
+  - git submodule update --init --recursive
+  - "mysql -e 'create database drupal;'"
+  - pear channel-discover pear.drush.org
+  - pear install drush/drush
+  - pear channel-discover pear.phing.info
+  - pear install phing/phing
+  - pear install channel://pear.php.net/VersionControl_Git-0.4.4
+  - phpenv rehash
+  # - drush make src/build-mydistro-pub.make build/app
+  # - cd build/app
+  # - sudo chmod -R 777 sites/all/modules
+  # - drush si mydistro --db-url=mysql://root:@127.0.0.1/drupal --account-name=admin --account-pass=admin --site-mail=admin@example.com --site-name="test.travis" --yes
+  # - drush cc all --yes
+
+script:
+  - phing config:db:travis
+  - phing install
+  # - test -d profiles/vih_dk
+  # - test -d profiles/vih_dk/modules/contrib
+  # - test -d profiles/vih_dk/modules/vih
+  # - test -d profiles/vih_dk/themes

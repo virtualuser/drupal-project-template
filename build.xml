@@ -3,8 +3,23 @@
 
   <!-- Ensure build environment is set up -->
   <target name="init">
+    <property name="src.repo.dir" value="./src" />
+    <resolvepath propertyName="src.repo.dir.resolved" file="${src.repo.dir}" />
+    <resolvepath propertyName="build.app.dir.resolved" file="${build.app.dir}" />
+    <property name="build.clean.force" value="false" />
+    <property name="build.app.dir.exists" value="false" />
+
+    <!-- Pull in src from git submodule -->
+    <if>
+      <not><available file="${project.basedir}/src/drupal-org.make" /></not>
+      <then>
+        <exec command="git submodule init" />
+        <exec command="git submodule update" />
+      </then>
+    </if>
+
     <!-- Provide default build properties if none exist -->
-    <exec command="touch build.properties" dir="${project.basedir}" />
+    <touch file="${project.basedir}/build.properties" />
     <filesize file="${project.basedir}/build.properties" propertyname="project.propfile.size" />
     <if>
       <equals arg1="0" arg2="${project.propfile.size}"/>
@@ -12,12 +27,13 @@
         <copy file="build.properties.dist" tofile="build.properties" overwrite="true"/>
       </then>
     </if>
+
+    <property file="build.properties" />
+    <property name="project.toolsdir" value="${project.basedir}/tools" />
   </target>
 
   <!-- Update project with latest distribution code from repo -->
-  <target name="update-src">
-    <property name="src.repo.dir" value="./src" />
-    <resolvepath propertyName="src.repo.dir.resolved" file="${src.repo.dir}" />
+  <target name="update:src" depends="init">
     <!-- pull remote origin/master and rebase when merging -->
     <gitpull
         repository="${src.repo.dir.resolved}"
@@ -29,7 +45,155 @@
     <exec command="git commit -m'Updated distribution source'" dir="${project.basedir}" />
   </target>
 
-  <target name="build" depends="init">
+  <!-- ### Setup Phing Drush integration -->
+  <target name="setup-phing-drush" depends="init">
+    <!-- Clone the project -->
+    <property name="repo.dir" value="${project.toolsdir}" />
+    <resolvepath propertyName="repo.dir.resolved" file="${repo.dir}" />
+    <if>
+      <not><available file="${repo.dir.resolved}" type="dir" /></not>
+      <then>
+        <gitclone
+            repository="https://github.com/kasperg/phing-drush-task.git"
+            targetPath="${repo.dir.resolved}/phing-drush" />
+      </then>
+    </if>
+    <!-- Register as custom Phing task -->
+    <taskdef name="drush" classname="DrushTask"
+             classpath="${project.toolsdir}/phing-drush" />
+  </target>
+
+  <target name="make:distro" depends="init, setup-phing-drush">
+    <if>
+      <not><available file="${build.app.dir}" type="dir" /></not>
+      <then>
+        <if>
+            <istrue value="${project.environment.development}" />
+            <then>
+                <drush command="make" assume="yes">
+                    <param>${src.repo.dir}/build-mydistro.make</param>
+                    <param>${build.app.dir}</param>
+                    <option name="working-copy" />
+                    <option name="no-gitinfofile" />
+                </drush>
+            </then>
+            <else>
+                <drush command="make" assume="yes">
+                    <param>${src.repo.dir}/build-mydistro-pub.make</param>
+                    <param>${build.app.dir}</param>
+                </drush>
+            </else>
+        </if>
+      </then>
+      <else>
+        <phingcall target="make:profile" />
+      </else>
+    </if>
+  </target>
+
+  <target name="make:profile" depends="setup-phing-drush, clean:profile">
+    <property name="src.repo.dir" value="./src" />
+    <exec command="drush --yes --nocolor make --no-core --contrib-destination=. drupal-org.make"
+          dir="${build.app.dir}/profiles/mydistro"
+          logoutput="true" />
+  </target>
+
+  <target name="config:db" depends="build">
+    <echo msg="Configuring development database user" />
+    <propertyprompt
+      propertyName="db.root.pw"
+      defaultValue="root"
+      promptText="Enter your mysql root password (only used once here to create user)" />
+    <exec command="mysql -uroot -p'${db.root.pw}' mysql &lt; db/config/dev.db.user.sql" dir="${project.basedir}" />
+  </target>
+  <target name="config:db:travis" depends="build">
+    <echo msg="Configuring travis database user" />
+    <exec command="mysql -uroot mysql &lt; db/config/dev.db.user.sql" dir="${project.basedir}" />
+  </target>
+
+  <target name="install" depends="build">
+    <drush command="site-install" assume="yes">
+      <option name="root">${build.app.dir}</option>
+      <option name="db-url">${drupal.db.url}</option>
+      <option name="account-pass">admin</option>
+      <option name="site-name">${project.site.name}</option>
+      <param>mydistro</param>
+    </drush>
+  </target>
+
+  <target name="build" depends="init, clean, make:distro">
     <property file="build.properties" override="true" />
   </target>
+
+  <target name="clean:all" depends="init">
+    <delete file="${project.basedir}/build.properties" />
+    <phingcall target="clean">
+      <property name="build.clean.force" value="true" />
+    </phingcall>
+  </target>
+
+  <target name="clean:force" depends="init">
+    <phingcall target="clean">
+      <property name="build.clean.force" value="true" />
+    </phingcall>
+  </target>
+
+  <target name="clean" depends="init, clean:run">
+    <available file="${build.app.dir}" type="dir" property="build.app.dir.exists" />
+    <if>
+      <or>
+        <and>
+          <istrue value="${build.app.dir.exists}" />
+          <isfalse value="${project.environment.development}" />
+        </and>
+        <istrue value="${build.clean.force}" />
+      </or>
+      <then>
+        <delete dir="${project.toolsdir}" includeemptydirs="true" failonerror="false" />
+        <if>
+          <available file="${build.app.dir}" type="dir" />
+          <then>
+            <chmod file="build/app/sites/default" mode="777" failonerror="false" />
+            <chmod mode="777" failonerror="false" quiet="true">
+              <fileset dir="build/app/sites/default">
+                <include name="*.php" />
+              </fileset>
+            </chmod>
+          </then>
+        </if>
+        <delete dir="${build.app.dir}" includeemptydirs="true" failonerror="false" quiet="true" />
+        <delete dir="${project.basedir}/build" includeemptydirs="true" failonerror="false" quiet="true" />
+      </then>
+    </if>
+  </target>
+
+  <target name="clean:profile" depends="init">
+    <delete dir="${build.app.dir.resolved}/profiles/mydistro/modules/contrib" includeemptydirs="true" failonerror="false" quiet="true" />
+    <delete dir="${build.app.dir.resolved}/profiles/mydistro/themes/contrib" includeemptydirs="true" failonerror="false" quiet="true" />
+  </target>
+
+  <target name="clean:run" depends="init">
+    <exec command="mkdir -pv ${project.basedir}/build" />
+    <exec command="ps ax|grep 'php --root=${build.app.dir} --user=1 runserver' |grep -v grep |sed -e 's/^ *//' |cut -d' ' -f1 > ${project.basedir}/build/run.pid" />
+    <if>
+        <available file="${project.basedir}/build/run.pid" />
+        <then>
+            <exec command="kill `cat build/run.pid`" />
+        </then>
+    </if>
+  </target>
+
+  <target name="run" depends="clean:run">
+    <if>
+      <not><available file="${build.app.dir}/sites/default/settings.php" /></not>
+      <then>
+        <phingcall target="install" />
+      </then>
+    </if>
+    <exec command="drush --root=${build.app.dir} --user=1 runserver"
+      spawn="true"
+      output="${project.basedir}/build/access.log"
+      error="${project.basedir}/build/error.log" />
+  </target>
+
 </project>

@@ -1,7 +1,14 @@
-project.name = "mydistro"
-project.environment.development = true
+project.name = mydistro
+project.site.name = "Distribution Template"
+project.environment.development = false
 
-drupal.db.name = "${project.name}"
-drupal.db.user = "${project.name}"
-drupal.db.password = "${project.name}"
-drupal.db.url = "mysql://${drupal.db.user}:${drupal.db.password}"@localhost/${drupal.db.name}
+build.app.dir = ${project.basedir}/build/app
+# build.app.port = 8888
+
+## CREATE USER 'dev'@'localhost';
+## GRANT ALL PRIVILEGES ON `dev\_%` .  * TO 'dev'@'%';
+drupal.db.server = localhost
+drupal.db.name = dev_${project.name}
+drupal.db.user = dev
+# drupal.db.password =
+drupal.db.url = mysql://${drupal.db.user}@localhost/${drupal.db.name}
