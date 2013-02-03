@@ -14,6 +14,21 @@
     </if>
   </target>
 
+  <!-- Update project with latest distribution code from repo -->
+  <target name="update-src">
+    <property name="src.repo.dir" value="./src" />
+    <resolvepath propertyName="src.repo.dir.resolved" file="${src.repo.dir}" />
+    <!-- pull remote origin/master and rebase when merging -->
+    <gitpull
+        repository="${src.repo.dir.resolved}"
+        source="origin" refspec="master"
+        strategy="recursive" keep="true"
+        force="true" quiet="true" rebase="true" />
+    <exec command="git reset" dir="${project.basedir}" />
+    <exec command="git add ${src.repo.dir}" dir="${project.basedir}" />
+    <exec command="git commit -m'Updated distribution source'" dir="${project.basedir}" />
+  </target>
+
   <target name="build" depends="init">
     <property file="build.properties" override="true" />
   </target>
