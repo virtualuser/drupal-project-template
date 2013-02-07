@@ -183,7 +183,8 @@
     </if>
   </target>
 
-  <target name="run" depends="clean:run">
+  <target name="run" depends="clean:run"
+          description="Install and execute using PHP builtin web server">
     <if>
       <not><available file="${build.app.dir}/sites/default/settings.php" /></not>
       <then>
