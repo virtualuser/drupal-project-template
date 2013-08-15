@@ -1,7 +1,7 @@
 {
     "name": "boztek/drupal-project",
     "description": "Another site another $!",
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "authors": [
         {
             "name": "Boris Gordon",
