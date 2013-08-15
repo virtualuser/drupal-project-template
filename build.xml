@@ -9,7 +9,11 @@
     <property name="build.clean.force" value="false" />
     <property name="build.app.dir.exists" value="false" />
 
-    <!-- Pull in src from git submodule -->
+    <exec command="php composer.phar install"
+          dir="${project.basedir}"
+          logoutput="true" />
+
+      <!-- Pull in src from git submodule -->
     <if>
       <not><available file="${project.basedir}/src/drupal-org.make" /></not>
       <then>

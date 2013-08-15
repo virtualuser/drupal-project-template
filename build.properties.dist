@@ -1,6 +1,6 @@
 project.name = mydistro
 project.site.name = "Distribution Template"
-project.environment.development = false
+project.environment.development = true
 
 build.app.dir = ${project.basedir}/build/app
 # build.app.port = 8888
@@ -11,4 +11,4 @@ drupal.db.server = localhost
 drupal.db.name = dev_${project.name}
 drupal.db.user = dev
 # drupal.db.password =
-drupal.db.url = mysql://${drupal.db.user}@localhost/${drupal.db.name}
+drupal.db.url = mysql://${drupal.db.user}@127.0.0.1/${drupal.db.name}
