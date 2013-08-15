@@ -1,0 +1,23 @@
+default:
+  paths:
+    features:  features
+    bootstrap: features/bootstrap
+  extensions:
+    Behat\MinkExtension\Extension:
+      base_url: 'http://localhost:8888'
+      goutte:
+        guzzle_parameters:
+          curl.CURLOPT_TIMEOUT: 120
+      selenium2: ~
+    Drupal\DrupalExtension\Extension:
+      blackbox: ~
+      drush:
+        root: "/Users/boris/src/phing-demo/drupal-project-template"
+
+drupal7:
+  filters:
+    tags: "@api"
+  extensions:
+    Drupal\DrupalExtension\Extension:
+      drush:
+        root: "/Users/boris/src/phing-demo/drupal-project-template"

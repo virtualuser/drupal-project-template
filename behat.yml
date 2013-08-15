@@ -1,10 +1,10 @@
-default:
+annotations:
   paths:
-    features: 'features'
-  extensions:
-    Behat\MinkExtension\Extension:
-      goutte: ~
-      selenium2: ~
-      base_url: http://localhost:8888/
-    Drupal\DrupalExtension\Extension:
-      blackbox: ~
+    features: features/annotations
+
+closures:
+  paths:
+    features: features/closures
+
+imports:
+  - behat.local.yml
