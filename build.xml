@@ -9,9 +9,14 @@
     <property name="build.clean.force" value="false" />
     <property name="build.app.dir.exists" value="false" />
 
-    <exec command="php composer.phar install"
-          dir="${project.basedir}"
-          logoutput="true" />
+    <loadfile property="build.environment" file=".env"/>
+
+    <taskdef name="growlnotify" classname="phing.tasks.ext.GrowlNotifyTask" />
+
+    <composer command="install" />
+    <!--<exec command="php composer.phar install"-->
+          <!--dir="${project.basedir}"-->
+          <!--logoutput="true" />-->
 
       <!-- Pull in src from git submodule -->
     <if>
@@ -72,7 +77,8 @@
       <not><available file="${build.app.dir}" type="dir" /></not>
       <then>
         <if>
-            <istrue value="${project.environment.development}" />
+            <!--<istrue value="${project.environment.development}" />-->
+            <equals arg1="${build.environment}" arg2="dev" />
             <then>
                 <drush command="make" assume="yes">
                     <param>${src.repo.dir}/build-mydistro.make</param>
@@ -127,6 +133,8 @@
 
   <target name="build" depends="init, clean, make:distro">
     <property file="build.properties" override="true" />
+    <growlnotify message="Build complete."
+                 host="192.168.1.26" />
   </target>
 
   <target name="clean:all" depends="init">
