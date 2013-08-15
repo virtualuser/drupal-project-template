@@ -11,4 +11,4 @@ drupal.db.server = localhost
 drupal.db.name = dev_${project.name}
 drupal.db.user = dev
 # drupal.db.password =
-drupal.db.url = mysql://${drupal.db.user}@127.0.0.1/${drupal.db.name}
+drupal.db.url = mysql://${drupal.db.user}@127.0.0.1:13306/${drupal.db.name}
