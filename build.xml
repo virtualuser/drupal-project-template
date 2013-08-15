@@ -102,7 +102,7 @@
     <echo msg="Configuring development database user" />
     <propertyprompt
       propertyName="db.root.pw"
-      defaultValue="root"
+      defaultValue=""
       promptText="Enter your mysql root password (only used once here to create user)" />
     <exec command="mysql -uroot -p'${db.root.pw}' mysql &lt; db/config/dev.db.user.sql" dir="${project.basedir}" />
   </target>
@@ -174,7 +174,7 @@
 
   <target name="clean:run" depends="init">
     <exec command="mkdir -pv ${project.basedir}/build" />
-    <exec command="ps ax|grep 'php --root=${build.app.dir} --user=1 runserver' |grep -v grep |sed -e 's/^ *//' |cut -d' ' -f1 > ${project.basedir}/build/run.pid" />
+    <exec command="ps ax|grep 'php -S 127.0.0.1:8888' |grep -v grep |sed -e 's/^ *//' |cut -d' ' -f1 > ${project.basedir}/build/run.pid" />
     <if>
         <available file="${project.basedir}/build/run.pid" />
         <then>
@@ -191,10 +191,23 @@
         <phingcall target="install" />
       </then>
     </if>
-    <exec command="drush --root=${build.app.dir} --user=1 runserver"
+    <exec command="drush --root=${build.app.dir} runserver --server=builtin --user=1"
       spawn="true"
       output="${project.basedir}/build/access.log"
       error="${project.basedir}/build/error.log" />
+    <!-- <property name="my.file" value="bah" /> -->
+    <loadfile file="./build/access.log" property="my.file" />
+    <echo message="Web server running http://localhost:8888" />
+  </target>
+
+  <target name="run:stop">
+    <exec command="ps ax|grep 'php -S 127.0.0.1:8888' |grep -v grep |sed -e 's/^ *//' |cut -d' ' -f1 > ${project.basedir}/build/run.pid" />
+    <if>
+        <available file="${project.basedir}/build/run.pid" />
+        <then>
+            <exec command="kill `cat build/run.pid`" />
+        </then>
+    </if>
   </target>
 
 </project>
